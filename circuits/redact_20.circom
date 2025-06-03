@@ -15,4 +15,4 @@ template NovaRedact(blockSize){
     step_out <== RedactHash(blockSize)(step_in, block, redact);
 }
 
-component main { public [step_in] } = NovaRedact(25); // block is 40x40, with 10-pixel compression
+component main { public [step_in] } = NovaRedact(20); // block is 40x40, with 10-pixel compression

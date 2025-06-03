@@ -59,8 +59,11 @@ CHUNK_SIZE_BYTES = 31  # 248 bits
 CHUNK_SIZE_HEX = CHUNK_SIZE_BYTES * 2  # 62 hex characters
 PADDING_CHUNK = "0x" + "00" * CHUNK_SIZE_BYTES
 
-def compress_block_to_jpeg_hex_chunks(block_img, quality=75):
+def compress_block_to_jpeg_hex_chunks(block_img, quality=75, grayscale=False):
     """Compress block to JPEG, return list of 62-character hex chunks."""
+    if grayscale:
+        block_img = block_img.convert("L")  # Convert to 8-bit grayscale
+
     buffer = io.BytesIO()
     block_img.save(buffer, format='JPEG', quality=quality)
     jpeg_bytes = buffer.getvalue()
@@ -74,7 +77,7 @@ def compress_block_to_jpeg_hex_chunks(block_img, quality=75):
     
     return chunks
 
-def image_to_uniform_jpeg_hex_chunks(image_path, block_size=16, jpeg_quality=75):
+def image_to_uniform_jpeg_hex_chunks(image_path, block_size=16, jpeg_quality=75, grayscale=False):
     image = Image.open(image_path).convert("RGB")
     width, height = image.size
 
@@ -90,7 +93,7 @@ def image_to_uniform_jpeg_hex_chunks(image_path, block_size=16, jpeg_quality=75)
         for x in range(0, width, block_size):
             box = (x, y, x + block_size, y + block_size)
             block = image.crop(box)
-            chunks = compress_block_to_jpeg_hex_chunks(block, quality=jpeg_quality)
+            chunks = compress_block_to_jpeg_hex_chunks(block, quality=jpeg_quality, grayscale=grayscale)
             block_chunks.append(chunks)
 
     # Step 2: Find max chunk length
@@ -109,12 +112,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert image to uniform JPEG hex chunks')
     parser.add_argument('image_path', help='Path to the input image file')
     parser.add_argument('output_json_path', help='Path for the output JSON file')
+    parser.add_argument('quality', help='Path for the output JSON file')
+    parser.add_argument('block_size', help='blocks height and width: 32, 64, . . . ')
+    parser.add_argument('grayscale', help='Shall we apply Grayscale? 0:no, 1: yes')
+
     args = parser.parse_args()
 
-    padded_chunked_blocks = image_to_uniform_jpeg_hex_chunks(args.image_path)
+    padded_chunked_blocks = image_to_uniform_jpeg_hex_chunks(args.image_path, int(args.block_size), int(args.quality), bool(int(args.grayscale)))
 
     json_data = {
-        "origial": padded_chunked_blocks,
+        "original": padded_chunked_blocks,
         "redact": [random.choice(["0x00", "0x01"]) for _ in range(len(padded_chunked_blocks))]
     }
 
